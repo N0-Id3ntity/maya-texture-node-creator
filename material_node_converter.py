@@ -20,14 +20,25 @@ class TNC_Window(object):
         print("TEXTURE_DIR_PATH: ", self.texture_path[0])
         if self.texture_path:
             self.texture_path=Path(self.texture_path[0]).parent
+            self.mat_name = os.path.basename(self.texture_path)
+            print("AOOOOO", self.mat_name)
             cmds.textField(self.dirTextBox, text=self.texture_path, edit=True)
+            material = cmds.shadingNode('aiStandardSurface', name=self.mat_name, asShader=True, shared=True)
 
     def convert_button_clicked(self, *_):
-       print("Continue conversion process")
+        print("Continue conversion process")
+        if os.path.exists(self.texture_path):
+            # list all the geometry shapes in order to create the shape node
+            print("Path exists", cmds.ls(type='geometryShape'))
+        else:
+            print("This path does not exists")
+        
+       
 
     def __init__(self):
         self.window = "Texture nodes creator"
         self.title = "Texture nodes creator"
+        self.mat_name = "MAT"
         
         if cmds.window(self.window, exists=True):
             cmds.deleteUI(self.window, window=True)
@@ -41,7 +52,19 @@ class TNC_Window(object):
         cmds.rowLayout("directoryRow", numberOfColumns=2, adjustableColumn=True, parent="root")
         self.dirTextBox = cmds.textField(text=self.startingDir)
         browser_button = cmds.button("Browser", command=self.browser_button_clicked)
+
+        # self.objects_list = cmds.ls(type='geometryShape') if len(cmds.ls(type='geometryShape')) > 0 else []
+        # self.scroll_view = cmds.textScrollList('objectsList', parent='root', allowMultiSelection=True, append=self.objects_list, visible=len(self.objects_list) > 0)        
         
+        # material = cmds.shadingNode('aiStandardSurface', name="myMaterial", asShader=True, shared=True)
+        # cmds.select('pCubeShape1')
+        # cmds.hyperShade(name=self.mat_name, assign=material)
+        # # cmds.select(cl=True)
+        # cmds.hyperShade( objects='pCubeShape1' )
+        # blinn = cmds.createNode('blinn')
+        # cmds.select( 'aiStandardSurface', blinn )
+        # cmds.hyperShade( objects='' )
+
         cmds.separator(height=3, style="in", parent="root")
         
         cmds.rowLayout("buttonsRow", numberOfColumns=2, parent="root", columnAlign=(12, "right"))
