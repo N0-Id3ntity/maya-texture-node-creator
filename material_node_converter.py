@@ -9,7 +9,7 @@ class TNC_Window(object):
         cmds.deleteUI(self.window, window=True)
 
     def load_button_clicked(self, *_):
-        print("AOOOOOOO")
+        print("Load texture button custom function [empty]")
 
     def browser_button_clicked(self, *_):
         print("Browser button clicked", os.listdir(self.startingDir))
@@ -25,32 +25,7 @@ class TNC_Window(object):
         if self.texture_path:
             self.texture_path=Path(self.texture_path[0]).parent
             self.mat_name = os.path.basename(self.texture_path)
-            print("AOOOOO", self.mat_name)
-            cmds.textField(self.dirTextBox, text=self.texture_path, edit=True)
-
-            # open the hypershade window
-            # cmds.HypershadeWindow()
-            # get the name of the hsPanel
-            # hsPanel = cmds.getPanel(withFocus=True)
-            # clear the graph
-            # cmds.hyperShade(resetGraph=True)
-            
-            # create shading node
-            self.shader = cmds.shadingNode('aiStandardSurface', name=self.mat_name, asShader=True, shared=True)
-            # create albedo file
-            albedo_file = cmds.shadingNode('file', name='%s_BaseColor' % self.shader, asTexture=True)
-            
-            texture_files = os.listdir(self.texture_path)
-            regex = '.*.(_BaseColor).[0-9]*.png|.*.(_BaseColor).png'
-            filtered_values = list(filter(lambda v: match(regex, v), texture_files))
-            print("TESORO MIOOOOO", filtered_values, self.texture_path)
-
-            albedo_file_path = os.path.join(f"{self.texture_path}\{texture_files[0]}")
-            print("ALBEDO FILE PATH:", albedo_file_path)
-
-            cmds.setAttr('%s.ftn' % albedo_file, '%s' % albedo_file_path, type='string')
-
-            cmds.connectAttr('%s.outColor' % albedo_file, '%s.baseColor' %self.shader)
+            cmds.textField(self.dirTextBox, text=self.texture_path, edit=True) 
 
 
             
@@ -59,8 +34,41 @@ class TNC_Window(object):
         if os.path.exists(self.texture_path):
             # list all the geometry shapes in order to create the shape node
             print("Path exists", cmds.ls(type='geometryShape'))
+
+            # create shading node
+            self.shader = cmds.shadingNode('aiStandardSurface', name=self.mat_name, asShader=True, shared=True)
+            # create albedo file
+            albedo_file = cmds.shadingNode('file', name='%s_BaseColor' % self.shader, asTexture=True)
+            
+            texture_files = os.listdir(self.texture_path)
+            regex = '.*.(_BaseColor).[0-9]*.png|.*.(_BaseColor).png'
+            filtered_values = list(filter(lambda v: match(regex, v), texture_files))
+
+            if (filtered_values):
+                if(len(filtered_values) > 1):
+                    cmds.setAttr('%s.uvTilingMode' % albedo_file, 3)
+
+                albedo_file_path = os.path.join(f"{self.texture_path}\{texture_files[0]}")
+                print("ALBEDO FILE PATH:", albedo_file_path)
+
+                cmds.setAttr('%s.ftn' % albedo_file, '%s' % albedo_file_path, type='string')
+
+                cmds.connectAttr('%s.outColor' % albedo_file, '%s.baseColor' %self.shader)
+            else:
+                print("No texture found for %s property" % regex)
+
         else:
             print("This path does not exists")
+    
+    # def _check_contains_images(self):
+    #         texture_files = os.listdir(self.texture_path)
+    #         regex = '.*.png|.*.jpeg|.*.jpg|.*.gif|.*.tif|.*.iff'
+    #         filtered_values = list(filter(lambda v: match(regex, v), texture_files))
+    #         if(len(filtered_values) == 0):
+    #             print("No image found in this folder")
+    #             cmds.setAttr("%s.enable" % self.convert_button, False)
+    #         else:
+    #             cmds.setAttr("%s.enable" % self.convert_button, True)
         
        
 
@@ -77,9 +85,10 @@ class TNC_Window(object):
 
         projectDirectory = cmds.workspace(q=True, rd=True)
         self.startingDir = projectDirectory if projectDirectory else os.environ["MAYA_APP_DIR"]
+        self.texture_path = self.startingDir
 
         cmds.rowLayout("directoryRow", numberOfColumns=2, adjustableColumn=True, parent="root")
-        self.dirTextBox = cmds.textField(text=self.startingDir)
+        self.dirTextBox = cmds.textField(text=self.startingDir, editable=False)
         browser_button = cmds.button("Browser", command=self.browser_button_clicked)
 
         # self.objects_list = cmds.ls(type='geometryShape') if len(cmds.ls(type='geometryShape')) > 0 else []
@@ -89,8 +98,10 @@ class TNC_Window(object):
         cmds.separator(height=3, style="in", parent="root")
         
         cmds.rowLayout("buttonsRow", numberOfColumns=2, parent="root", columnAlign=(12, "right"))
-        convert_button = cmds.button("Convert", command=self.convert_button_clicked, parent="buttonsRow")
-        close_button = cmds.button("Cancel", command=self.close_window_button_clicked, parent="buttonsRow")
+        self.convert_button = cmds.button("convertButton", label="Convert", command=self.convert_button_clicked, parent="buttonsRow")
+        close_button = cmds.button(label="Cancel", command=self.close_window_button_clicked, parent="buttonsRow")
+
+        # self._check_contains_images()
 
         cmds.showWindow()
 
