@@ -27,22 +27,31 @@ class TNC_Window(object):
             self.mat_name = os.path.basename(self.texture_path)
             print("AOOOOO", self.mat_name)
             cmds.textField(self.dirTextBox, text=self.texture_path, edit=True)
+
+            # open the hypershade window
+            # cmds.HypershadeWindow()
+            # get the name of the hsPanel
+            # hsPanel = cmds.getPanel(withFocus=True)
+            # clear the graph
+            # cmds.hyperShade(resetGraph=True)
             
             # create shading node
             self.shader = cmds.shadingNode('aiStandardSurface', name=self.mat_name, asShader=True, shared=True)
             # create albedo file
             albedo_file = cmds.shadingNode('file', name='%s_BaseColor' % self.shader, asTexture=True)
-            print("EEEEEE", albedo_file)
-
             
             texture_files = os.listdir(self.texture_path)
             regex = '.*.(_BaseColor).[0-9]*.png|.*.(_BaseColor).png'
             filtered_values = list(filter(lambda v: match(regex, v), texture_files))
             print("TESORO MIOOOOO", filtered_values, self.texture_path)
 
-            # cmds.setAttr('%s.imageName' % albedo_file, self.texture_path)
+            albedo_file_path = os.path.join(f"{self.texture_path}\{texture_files[0]}")
+            print("ALBEDO FILE PATH:", albedo_file_path)
+
+            cmds.setAttr('%s.ftn' % albedo_file, '%s' % albedo_file_path, type='string')
 
             cmds.connectAttr('%s.outColor' % albedo_file, '%s.baseColor' %self.shader)
+
 
             
     def convert_button_clicked(self, *_):
