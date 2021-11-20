@@ -50,16 +50,13 @@ class TNC_Window(object):
         self.shader = cmds.shadingNode('aiStandardSurface', name=self.mat_name, asShader=True, shared=True)
 
         for param in PBR_MATERIAL_PROPERTIES:
-            print("PBR PROPERTY:", param)
             for ext in IMAGE_FILE_EXTENSIONS:
-                print("PBR FILE EXTENSION:", ext)
                 # create regex
                 regex = f'.*.(_{param}).[0-9]*.{ext}|.*.(_{param}).{ext}'
                 filtered_values = list(filter(lambda v: match(regex, v), texture_files))
                 if len(filtered_values) > 0:
                     print(f"Create nodes for {param} with extension {ext}")
                     file_node_name = f'{self.shader}_{param}'
-                    print("FILE NODE NAME: ", file_node_name)
                     # create file node
                     file_node = cmds.shadingNode('file', name=f'{self.shader}_{param}', asTexture=True)
 
@@ -91,26 +88,13 @@ class TNC_Window(object):
 
             
     def convert_button_clicked(self, *_):
-        print("Continue conversion process")
         if os.path.exists(self.texture_path):
             # list all the geometry shapes in order to create the shape node
             print("Path exists", cmds.ls(type='geometryShape'))
             # creates material nodes
             self._create_nodes()
-
         else:
             print("This path does not exists")
-    
-    # def _check_contains_images(self):
-    #         texture_files = os.listdir(self.texture_path)
-    #         regex = '.*.png|.*.jpeg|.*.jpg|.*.gif|.*.tif|.*.iff'
-    #         filtered_values = list(filter(lambda v: match(regex, v), texture_files))
-    #         if(len(filtered_values) == 0):
-    #             print("No image found in this folder")
-    #             cmds.setAttr("%s.enable" % self.convert_button, False)
-    #         else:
-    #             cmds.setAttr("%s.enable" % self.convert_button, True)
-        
        
 
     def __init__(self):
@@ -132,17 +116,11 @@ class TNC_Window(object):
         self.dirTextBox = cmds.textField(text=self.startingDir, editable=False)
         browser_button = cmds.button("Browser", command=self.browser_button_clicked)
 
-        # self.objects_list = cmds.ls(type='geometryShape') if len(cmds.ls(type='geometryShape')) > 0 else []
-        # self.scroll_view = cmds.textScrollList('objectsList', parent='root', allowMultiSelection=True, append=self.objects_list, visible=len(self.objects_list) > 0)        
-
-
         cmds.separator(height=3, style="in", parent="root")
         
         cmds.rowLayout("buttonsRow", numberOfColumns=2, parent="root", columnAlign=(12, "right"))
         self.convert_button = cmds.button("convertButton", label="Convert", command=self.convert_button_clicked, parent="buttonsRow")
         close_button = cmds.button(label="Cancel", command=self.close_window_button_clicked, parent="buttonsRow")
-
-        # self._check_contains_images()
 
         cmds.showWindow()
 
