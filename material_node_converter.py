@@ -1,29 +1,36 @@
 import re
 import os
-from re import match
-from pathlib import Path
+
 import maya.cmds as cmds
 
+from pathlib import Path
+from re import match
+
+# substance painter suffix file
+BASE_COLOR = 'BaseColor'
+METALNESS = 'Metalness'
+ROUGHNESS = 'Roughness'
+NORMAL = 'Normal'
+
+# suffix files and maya props names map
 PBR_MATERIAL_PROPERTIES = {
-    'BaseColor': 'baseColor',
-    'Metalness': 'metalness',
-    'Roughness': 'specularRoughness',
-    'Normal': 'normalCamera',
+    BASE_COLOR: 'baseColor',
+    METALNESS: 'metalness',
+    ROUGHNESS: 'specularRoughness',
+    NORMAL: 'normalCamera',
 }
 
+# supported image extensions
 IMAGE_FILE_EXTENSIONS = ['png', 'jpeg', 'jpg', 'gif', 'tif', 'iff']
 
 class TNC_Window(object):
     def close_window_button_clicked(self, *_):
         cmds.deleteUI(self.window, window=True)
 
-    def load_button_clicked(self, *_):
-        print("Load texture button custom function [empty]")
-
     def browser_button_clicked(self, *_):
         print("Browser button clicked", os.listdir(self.startingDir))
         multipleFilters = "Image (*.png *.jpeg *.jpg *.gif *.tif *.iff);;"
-        file_dialog = cmds.fileDialog2(startingDirectory=self.startingDir, fileFilter=multipleFilters, fileMode=4, okCaption="Load", optionsUICommit=self.load_button_clicked)
+        file_dialog = cmds.fileDialog2(startingDirectory=self.startingDir, fileFilter=multipleFilters, fileMode=4, okCaption="Load")
 
         self.texture_path = file_dialog
 
@@ -65,12 +72,11 @@ class TNC_Window(object):
 
                     cmds.setAttr('%s.ftn' % file_node, '%s' % file_path, type='string')
 
-                    if param == 'Metalness' or param == 'Roughness':
+                    if param == METALNESS or param == ROUGHNESS:
                         cmds.connectAttr('%s.outAlpha' % file_node, f'{self.shader}.{PBR_MATERIAL_PROPERTIES[param]}')
-                        # cmds.setAttr('%s.colorSpace' % file_node, 10)
+                        cmds.setAttr('%s.colorSpace' % file_node, 'Raw', type='string')
                     else:
-                        if param == "Normal":
-                            # ai_normal_map_node = cmds.createNode('aiNormalMap', type='aiNormalMap')
+                        if param == NORMAL:
                             ai_normal_map_node = cmds.shadingNode('aiNormalMap', name='aiNormalMap', asUtility=True)
                             cmds.connectAttr('%s.outColor' % file_node, f'{ai_normal_map_node}.input')
                             cmds.connectAttr(f'{ai_normal_map_node}.input',  f'{self.shader}.{PBR_MATERIAL_PROPERTIES[param]}')
