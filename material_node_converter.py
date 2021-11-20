@@ -4,6 +4,15 @@ from re import match
 from pathlib import Path
 import maya.cmds as cmds
 
+PBR_MATERIAL_PROPERTIES = {
+    'BaseColor': 'baseColor',
+    'Metalness': 'metalness',
+    'Roughness': 'specularRoughness',
+    'Normal': 'normalCamera',
+}
+
+IMAGE_FILE_EXTENSIONS = ['png', 'jpeg', 'jpg', 'gif', 'tif', 'iff']
+
 class TNC_Window(object):
     def close_window_button_clicked(self, *_):
         cmds.deleteUI(self.window, window=True)
@@ -28,34 +37,60 @@ class TNC_Window(object):
             cmds.textField(self.dirTextBox, text=self.texture_path, edit=True) 
 
 
+    def _create_nodes(self):
+        texture_files = os.listdir(self.texture_path)
+        # create shading node
+        self.shader = cmds.shadingNode('aiStandardSurface', name=self.mat_name, asShader=True, shared=True)
+
+        for param in PBR_MATERIAL_PROPERTIES:
+            print("PBR PROPERTY:", param)
+            for ext in IMAGE_FILE_EXTENSIONS:
+                print("PBR FILE EXTENSION:", ext)
+                # create regex
+                regex = f'.*.(_{param}).[0-9]*.{ext}|.*.(_{param}).{ext}'
+                filtered_values = list(filter(lambda v: match(regex, v), texture_files))
+                if len(filtered_values) > 0:
+                    print(f"Create nodes for {param} with extension {ext}")
+                    file_node_name = f'{self.shader}_{param}'
+                    print("FILE NODE NAME: ", file_node_name)
+                    # create file node
+                    file_node = cmds.shadingNode('file', name=f'{self.shader}_{param}', asTexture=True)
+
+                    # if there are more files for the same param it set the UV Tiling Mode to UDIM (Mari)
+                    if(len(filtered_values) > 1):
+                        cmds.setAttr('%s.uvTilingMode' % file_node, 3)
+
+                    file_path = os.path.join(f"{self.texture_path}\{filtered_values[0]}")
+                    print("FILE PATH:", file_path)
+
+                    cmds.setAttr('%s.ftn' % file_node, '%s' % file_path, type='string')
+
+                    if param == 'Metalness' or param == 'Roughness':
+                        cmds.connectAttr('%s.outAlpha' % file_node, f'{self.shader}.{PBR_MATERIAL_PROPERTIES[param]}')
+                        # cmds.setAttr('%s.colorSpace' % file_node, 10)
+                    else:
+                        if param == "Normal":
+                            # ai_normal_map_node = cmds.createNode('aiNormalMap', type='aiNormalMap')
+                            ai_normal_map_node = cmds.shadingNode('aiNormalMap', name='aiNormalMap', asUtility=True)
+                            cmds.connectAttr('%s.outColor' % file_node, f'{ai_normal_map_node}.input')
+                            cmds.connectAttr(f'{ai_normal_map_node}.input',  f'{self.shader}.{PBR_MATERIAL_PROPERTIES[param]}')
+                        else:
+                            cmds.connectAttr('%s.outColor' % file_node, f'{self.shader}.{PBR_MATERIAL_PROPERTIES[param]}')
+
+                    # if the files for a param are found with a specific extension is not necessary
+                    # to continue
+                    break
+                else:
+                    print(f"No file found for the {self.mat_name} {param} param")
+
             
     def convert_button_clicked(self, *_):
         print("Continue conversion process")
         if os.path.exists(self.texture_path):
             # list all the geometry shapes in order to create the shape node
             print("Path exists", cmds.ls(type='geometryShape'))
-
-            # create shading node
-            self.shader = cmds.shadingNode('aiStandardSurface', name=self.mat_name, asShader=True, shared=True)
-            # create albedo file
-            albedo_file = cmds.shadingNode('file', name='%s_BaseColor' % self.shader, asTexture=True)
-            
-            texture_files = os.listdir(self.texture_path)
-            regex = '.*.(_BaseColor).[0-9]*.png|.*.(_BaseColor).png'
-            filtered_values = list(filter(lambda v: match(regex, v), texture_files))
-
-            if (filtered_values):
-                if(len(filtered_values) > 1):
-                    cmds.setAttr('%s.uvTilingMode' % albedo_file, 3)
-
-                albedo_file_path = os.path.join(f"{self.texture_path}\{texture_files[0]}")
-                print("ALBEDO FILE PATH:", albedo_file_path)
-
-                cmds.setAttr('%s.ftn' % albedo_file, '%s' % albedo_file_path, type='string')
-
-                cmds.connectAttr('%s.outColor' % albedo_file, '%s.baseColor' %self.shader)
-            else:
-                print("No texture found for %s property" % regex)
+            # creates material nodes
+            self._create_nodes()
 
         else:
             print("This path does not exists")
