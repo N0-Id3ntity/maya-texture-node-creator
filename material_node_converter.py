@@ -126,9 +126,7 @@ class TNC_Window(object):
                     if len(filtered_values) > 1:
                         cmds.setAttr("%s.uvTilingMode" % file_node, 3)
 
-                    file_path = os.path.join(
-                        f"{self.texture_path}\{filtered_values[0]}"
-                    )
+                    file_path = os.path.join(self.texture_path, filtered_values[0])
                     print("FILE PATH:", file_path)
 
                     cmds.setAttr("%s.ftn" % file_node, "%s" % file_path, type="string")
