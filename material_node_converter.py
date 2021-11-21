@@ -56,6 +56,18 @@ class TNC_Window(object):
         cmds.separator(height=3, style="in", parent="root")
 
         cmds.rowLayout(
+            "noImageErrorRow",
+            adjustableColumn=True,
+            parent="root",
+        )
+        self.error_text_message = cmds.text(
+            "errorMessage",
+            label="This folder does not contains any images. Please select another one.",
+            parent="noImageErrorRow",
+            visible=False,
+        )
+
+        cmds.rowLayout(
             "buttonsRow", numberOfColumns=2, parent="root", columnAlign=(12, "right")
         )
         self.convert_button = cmds.button(
@@ -138,36 +150,52 @@ class TNC_Window(object):
                 else:
                     print(f"No file found for the {self.mat_name} {param} param")
 
+    def _folder_contains_images(self):
+        """
+        Check if the selected folder contains images. If not show an error message.
+        """
+        regex = f".*.{'|.*.'.join(IMAGE_FILE_EXTENSIONS)}"
+        texture_files = os.listdir(self.texture_path)
+        filtered_values = list(filter(lambda v: match(regex, v), texture_files))
+
+        return len(filtered_values) > 0
+
     def browser_button_clicked(self, *_):
         """
         It opens a file dialog in which the user select the texture folder.
         """
         multipleFilters = "Image (*.png *.jpeg *.jpg *.gif *.tif *.iff);;"
         file_dialog = cmds.fileDialog2(
-            startingDirectory=self.startingDir,
+            startingDirectory=self.texture_path
+            if self.texture_path
+            else self.startingDir,
             fileFilter=multipleFilters,
             fileMode=4,
             okCaption="Load",
         )
 
-        self.texture_path = file_dialog
-        print("TEXTURE_DIR_PATH: ", self.texture_path[0])
+        self.texture_path = Path(file_dialog[0]).parent
+        print("TEXTURE_DIR_PATH: ", self.texture_path)
 
         self.shading_file_node = {}
 
         if self.texture_path:
-            self.texture_path = Path(self.texture_path[0]).parent
             self.mat_name = os.path.basename(self.texture_path)
             cmds.textField(self.dirTextBox, text=self.texture_path, edit=True)
+        if self._folder_contains_images():
+            cmds.control(self.error_text_message, edit=True, visible=False)
 
     def convert_button_clicked(self, *_):
-        if os.path.exists(self.texture_path):
-            # list all the geometry shapes in order to create the shape node
-            print("Path exists", cmds.ls(type="geometryShape"))
-            # creates material nodes
-            self._create_nodes()
+        if self._folder_contains_images():
+            if os.path.exists(self.texture_path):
+                # list all the geometry shapes in order to create the shape node
+                print("Path exists", cmds.ls(type="geometryShape"))
+                # creates material nodes
+                self._create_nodes()
+            else:
+                print("This path does not exists")
         else:
-            print("This path does not exists")
+            cmds.control(self.error_text_message, edit=True, visible=True)
 
     def close_window_button_clicked(self, *_):
         """It closes the window."""
