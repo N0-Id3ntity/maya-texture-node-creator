@@ -35,12 +35,7 @@ class TNC_Window(object):
         self.title = "Texture nodes creator"
         self.mat_name = "MAT"
 
-        # it collects process infos (steps and errors). It contains a series of dict like:
-        # {"info": "Create node for BaseColor with extension png."} for step info
-        # {"error": "This folder does not contains any images."} for error messages
-        # The idea is to show to the user the info with different colors in base of success
-        # or error.
-        self.process_messages = []
+        # it contains all the info (steps/errors) about the running process.
         self.messages = []
 
         if cmds.window(self.window, exists=True):
@@ -73,7 +68,7 @@ class TNC_Window(object):
         self.scroll_message_list = cmds.textScrollList(
             "processInfoAndErrorMessages",
             allowMultiSelection=False,
-            append=self.process_messages,
+            append=self.messages,
         )
 
         cmds.rowLayout(
@@ -110,17 +105,13 @@ class TNC_Window(object):
                 regex = f".*.(_{param}).[0-9]*.{ext}|.*.(_{param}).{ext}"
                 filtered_values = list(filter(lambda v: match(regex, v), texture_files))
                 if len(filtered_values) > 0:
-                    print(f"Create nodes for {param} with extension {ext}")
-                    self.process_messages.append(
-                        {"info": f"Create nodes for {param} with extension {ext}"}
-                    )
                     self.messages.append(
                         f"Create nodes for {param} with extension {ext}"
                     )
                     cmds.textScrollList(
                         self.scroll_message_list,
                         edit=True,
-                        append=self.messages,
+                        append=f"Create nodes for {param} with extension {ext}",
                         numberOfItems=len(self.messages),
                     )
 
@@ -171,28 +162,22 @@ class TNC_Window(object):
                     break
                 else:
                     print(f"No file found for the {self.mat_name} {param} param")
-                    self.process_messages.append(
-                        {
-                            "error": f"No file found for the {self.mat_name} {param} param"
-                        }
-                    )
                     self.messages.append(
-                        f"No file found for the {self.mat_name} {param} param"
+                        f"No file found for the {self.mat_name} {param} param with {ext} extension."
                     )
                     cmds.textScrollList(
                         self.scroll_message_list,
                         edit=True,
-                        append=self.messages,
-                        numberOfItems=len(self.process_messages),
+                        append=f"No file found for the {self.mat_name} {param} param with {ext} extension.",
+                        numberOfItems=len(self.messages),
                     )
 
-        self.process_messages.append({"info": "FINISH"})
         self.messages.append("FINISH")
         cmds.textScrollList(
             self.scroll_message_list,
             edit=True,
-            append=self.messages,
-            numberOfItems=len(self.process_messages),
+            append="FINISH",
+            numberOfItems=len(self.messages),
         )
         print(self.process_messages)
 
@@ -222,13 +207,12 @@ class TNC_Window(object):
 
         self.texture_path = Path(file_dialog[0]).parent
         print("TEXTURE_DIR_PATH: ", self.texture_path)
-        self.process_messages.append({"info": f"TEXTURE_DIR_PATH: {self.texture_path}"})
         self.messages.append(f"TEXTURE_DIR_PATH: {self.texture_path}")
         cmds.textScrollList(
             self.scroll_message_list,
             edit=True,
-            append=self.messages,
-            numberOfItems=len(self.process_messages),
+            append=f"TEXTURE_DIR_PATH: {self.texture_path}",
+            numberOfItems=len(self.messages),
         )
 
         self.shading_file_node = {}
@@ -246,27 +230,22 @@ class TNC_Window(object):
                 # creates material nodes
                 self._create_nodes()
             else:
-                self.process_messages.append({"error": "This path does not exists."})
                 self.messages.append("This path does not exists.")
                 cmds.textScrollList(
                     self.scroll_message_list,
                     edit=True,
-                    append=self.messages,
+                    append="This path does not exists.",
                     numberOfItems=len(self.messages),
                 )
         else:
-            self.process_messages.append(
-                {
-                    "error": "This folder does not contains any images. Please select another one."
-                }
-            )
             self.messages.append(
                 "This folder does not contains any images. Please select another one."
             )
             cmds.textScrollList(
                 self.scroll_message_list,
                 edit=True,
-                append=self.messages,
+                append="This folder does not contains any images. Please select another one.",
+                # highlightColor=[0.69, 0, 0.12],
                 numberOfItems=len(self.messages),
             )
 
