@@ -6,8 +6,8 @@ It also evaluates if there are more UDIM and sets the correct value in the node 
 **NOTE:** It works only if the texture files name follow the name conventions of Substance Painter.
 
 ## Requirements
-- Maya 2022
-- Python 3
+- Maya 2020 and greater
+- Python 2.7 and greater
 
 ## How it works
 

@@ -1,9 +1,7 @@
-import re
 import os
 
 import maya.cmds as cmds
 
-from pathlib import Path
 from re import match
 
 # substance painter suffix file
@@ -102,23 +100,23 @@ class TNC_Window(object):
         for param in PBR_MATERIAL_PROPERTIES:
             for ext in IMAGE_FILE_EXTENSIONS:
                 # create regex
-                regex = f".*.(_{param}).[0-9]*.{ext}|.*.(_{param}).{ext}"
+                regex = ".*.(_%s).[0-9]*.%s|.*.(_%s).%s" % (param, ext, param, ext)
                 filtered_values = list(filter(lambda v: match(regex, v), texture_files))
                 if len(filtered_values) > 0:
                     self.messages.append(
-                        f"Create nodes for {param} with extension {ext}"
+                        "Create nodes for %s with extension %s" % (param, ext)
                     )
                     cmds.textScrollList(
                         self.scroll_message_list,
                         edit=True,
-                        append=f"Create nodes for {param} with extension {ext}",
+                        append="Create nodes for %s with extension %s" % (param, ext),
                         numberOfItems=len(self.messages),
                     )
 
-                    file_node_name = f"{self.shader}_{param}"
+                    file_node_name = "%s_%s" % (self.shader, param)
                     # create file node
                     file_node = cmds.shadingNode(
-                        "file", name=f"{self.shader}_{param}", asTexture=True
+                        "file", name="%s_%s" % (self.shader, param), asTexture=True
                     )
 
                     # if there are more files for the same param it set the UV Tiling Mode to
@@ -134,7 +132,7 @@ class TNC_Window(object):
                     if param == METALNESS or param == ROUGHNESS:
                         cmds.connectAttr(
                             "%s.outAlpha" % file_node,
-                            f"{self.shader}.{PBR_MATERIAL_PROPERTIES[param]}",
+                            "%s.%s" % (self.shader, PBR_MATERIAL_PROPERTIES[param]),
                         )
                         cmds.setAttr("%s.colorSpace" % file_node, "Raw", type="string")
                     else:
@@ -143,30 +141,33 @@ class TNC_Window(object):
                                 "aiNormalMap", name="aiNormalMap", asUtility=True
                             )
                             cmds.connectAttr(
-                                "%s.outColor" % file_node, f"{ai_normal_map_node}.input"
+                                "%s.outColor" % file_node,
+                                "%s.input" % ai_normal_map_node,
                             )
                             cmds.connectAttr(
-                                f"{ai_normal_map_node}.input",
-                                f"{self.shader}.{PBR_MATERIAL_PROPERTIES[param]}",
+                                "%s.input" % ai_normal_map_node,
+                                "%s.%s" % (self.shader, PBR_MATERIAL_PROPERTIES[param]),
                             )
                         else:
                             cmds.connectAttr(
                                 "%s.outColor" % file_node,
-                                f"{self.shader}.{PBR_MATERIAL_PROPERTIES[param]}",
+                                "%s.%s" % (self.shader, PBR_MATERIAL_PROPERTIES[param]),
                             )
 
                     # if the files for a param are found with a specific extension is not
                     # necessary to continue
                     break
                 else:
-                    print(f"No file found for the {self.mat_name} {param} param")
+                    print("No file found for the %s %s param" % (self.mat_name, param))
                     self.messages.append(
-                        f"No file found for the {self.mat_name} {param} param with {ext} extension."
+                        "No file found for the %s %s param with %s extension."
+                        % (self.mat_name, param, ext)
                     )
                     cmds.textScrollList(
                         self.scroll_message_list,
                         edit=True,
-                        append=f"No file found for the {self.mat_name} {param} param with {ext} extension.",
+                        append="No file found for the %s %s param with %s extension."
+                        % (self.mat_name, param, ext),
                         numberOfItems=len(self.messages),
                     )
 
@@ -177,13 +178,12 @@ class TNC_Window(object):
             append="FINISH",
             numberOfItems=len(self.messages),
         )
-        print(self.process_messages)
 
     def _folder_contains_images(self):
         """
         Check if the selected folder contains images. If not show an error message.
         """
-        regex = f".*.{'|.*.'.join(IMAGE_FILE_EXTENSIONS)}"
+        regex = ".*.%s" % ("|.*.".join(IMAGE_FILE_EXTENSIONS))
         texture_files = os.listdir(self.texture_path)
         filtered_values = list(filter(lambda v: match(regex, v), texture_files))
 
@@ -203,13 +203,13 @@ class TNC_Window(object):
             okCaption="Load",
         )
 
-        self.texture_path = Path(file_dialog[0]).parent
+        self.texture_path = os.path.dirname(file_dialog[0])
         print("TEXTURE_DIR_PATH: ", self.texture_path)
-        self.messages.append(f"TEXTURE_DIR_PATH: {self.texture_path}")
+        self.messages.append("TEXTURE_DIR_PATH: %s" % self.texture_path)
         cmds.textScrollList(
             self.scroll_message_list,
             edit=True,
-            append=f"TEXTURE_DIR_PATH: {self.texture_path}",
+            append="TEXTURE_DIR_PATH: %s" % self.texture_path,
             numberOfItems=len(self.messages),
         )
 
@@ -220,7 +220,6 @@ class TNC_Window(object):
             cmds.textField(self.dirTextBox, text=self.texture_path, edit=True)
 
     def convert_button_clicked(self, *_):
-        self.messages.clear()
         if self._folder_contains_images():
             if os.path.exists(self.texture_path):
                 # list all the geometry shapes in order to create the shape node
