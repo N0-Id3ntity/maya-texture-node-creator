@@ -129,30 +129,33 @@ class TNC_Window(object):
 
                     cmds.setAttr("%s.ftn" % file_node, "%s" % file_path, type="string")
 
+                    if param == BASE_COLOR:
+                        cmds.connectAttr(
+                            "%s.outColor" % file_node,
+                            "%s.%s" % (self.shader, PBR_MATERIAL_PROPERTIES[param]),
+                        )
+
                     if param == METALNESS or param == ROUGHNESS:
                         cmds.connectAttr(
                             "%s.outAlpha" % file_node,
                             "%s.%s" % (self.shader, PBR_MATERIAL_PROPERTIES[param]),
                         )
                         cmds.setAttr("%s.colorSpace" % file_node, "Raw", type="string")
-                    else:
-                        if param == NORMAL:
-                            ai_normal_map_node = cmds.shadingNode(
-                                "aiNormalMap", name="aiNormalMap", asUtility=True
-                            )
-                            cmds.connectAttr(
-                                "%s.outColor" % file_node,
-                                "%s.input" % ai_normal_map_node,
-                            )
-                            cmds.connectAttr(
-                                "%s.input" % ai_normal_map_node,
-                                "%s.%s" % (self.shader, PBR_MATERIAL_PROPERTIES[param]),
-                            )
-                        else:
-                            cmds.connectAttr(
-                                "%s.outColor" % file_node,
-                                "%s.%s" % (self.shader, PBR_MATERIAL_PROPERTIES[param]),
-                            )
+                        cmds.setAttr("%s.alphaIsLuminance" % file_node, True)
+
+                    if param == NORMAL:
+                        ai_normal_map_node = cmds.shadingNode(
+                            "aiNormalMap", name="aiNormalMap", asUtility=True
+                        )
+                        cmds.connectAttr(
+                            "%s.outColor" % file_node,
+                            "%s.input" % ai_normal_map_node,
+                        )
+                        cmds.setAttr("%s.colorSpace" % file_node, "Raw", type="string")
+                        cmds.connectAttr(
+                            "%s.input" % ai_normal_map_node,
+                            "%s.%s" % (self.shader, PBR_MATERIAL_PROPERTIES[param]),
+                        )
 
                     # if the files for a param are found with a specific extension is not
                     # necessary to continue
