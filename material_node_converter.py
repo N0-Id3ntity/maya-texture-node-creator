@@ -97,6 +97,10 @@ class TNC_Window(object):
             "aiStandardSurface", name=self.mat_name, asShader=True, shared=True
         )
 
+        place_2d_texture_node = cmds.shadingNode(
+            "place2dTexture", name="place2dTextureNode", asUtility=True
+        )
+
         for param in PBR_MATERIAL_PROPERTIES:
             for ext in IMAGE_FILE_EXTENSIONS:
                 # create regex
@@ -134,6 +138,9 @@ class TNC_Window(object):
                             "%s.outColor" % file_node,
                             "%s.%s" % (self.shader, PBR_MATERIAL_PROPERTIES[param]),
                         )
+                        cmds.connectAttr(
+                            "%s.outUV" % place_2d_texture_node, "%s.uvCoord" % file_node
+                        )
 
                     if param == METALNESS or param == ROUGHNESS:
                         cmds.connectAttr(
@@ -142,6 +149,9 @@ class TNC_Window(object):
                         )
                         cmds.setAttr("%s.colorSpace" % file_node, "Raw", type="string")
                         cmds.setAttr("%s.alphaIsLuminance" % file_node, True)
+                        cmds.connectAttr(
+                            "%s.outUV" % place_2d_texture_node, "%s.uvCoord" % file_node
+                        )
 
                     if param == NORMAL:
                         ai_normal_map_node = cmds.shadingNode(
@@ -155,6 +165,9 @@ class TNC_Window(object):
                         cmds.connectAttr(
                             "%s.input" % ai_normal_map_node,
                             "%s.%s" % (self.shader, PBR_MATERIAL_PROPERTIES[param]),
+                        )
+                        cmds.connectAttr(
+                            "%s.outUV" % place_2d_texture_node, "%s.uvCoord" % file_node
                         )
 
                     # if the files for a param are found with a specific extension is not
